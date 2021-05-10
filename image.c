@@ -32,7 +32,7 @@ Matrix algorithms[]={
 uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
     int px,mx,py,my,i,span;
     span=srcImage->width*srcImage->bpp;
-    // for the edge pixes, just reuse the edge pixel
+    // for the edge pixels, just reuse the edge pixel
     px=x+1; py=y+1; mx=x-1; my=y-1;
     if (mx<0) mx=0;
     if (my<0) my=0;
@@ -59,9 +59,9 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
 void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
     int row,pix,bit,span;
     span=srcImage->bpp*srcImage->bpp;
-    for (row=0;row<srcImage->height;row++){
-        for (pix=0;pix<srcImage->width;pix++){
-            for (bit=0;bit<srcImage->bpp;bit++){
+    for ( row=0; row<srcImage->height; row++ ){
+        for ( pix=0; pix<srcImage->width; pix++ ){
+            for ( bit=0; bit<srcImage->bpp; bit++ ){
                 destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,algorithm);
             }
         }
@@ -101,6 +101,7 @@ int main(int argc,char** argv){
     }
     enum KernelTypes type=GetKernelType(argv[2]);
 
+    // Load the image, allocate space, and copy values
     Image srcImage,destImage,bwImage;   
     srcImage.data=stbi_load(fileName,&srcImage.width,&srcImage.height,&srcImage.bpp,0);
     if (!srcImage.data){
@@ -111,12 +112,15 @@ int main(int argc,char** argv){
     destImage.height=srcImage.height;
     destImage.width=srcImage.width;
     destImage.data=malloc(sizeof(uint8_t)*destImage.width*destImage.bpp*destImage.height);
+
+    // Apply image filter function and write the data to output.png
     convolute(&srcImage,&destImage,algorithms[type]);
     stbi_write_png("output.png",destImage.width,destImage.height,destImage.bpp,destImage.data,destImage.bpp*destImage.width);
+
+    // Free data, output run time and exit
     stbi_image_free(srcImage.data);
-    
     free(destImage.data);
     t2=time(NULL);
     printf("Took %ld seconds\n",t2-t1);
-   return 0;
+    return 0;
 }

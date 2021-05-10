@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <time.h>
 #include <string.h>
+#include <omp.h>
+
 #include "image.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -57,14 +59,21 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
 //            algorithm: The kernel matrix to use for the convolution
 //Returns: Nothing
 void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
-    int row,pix,bit,span;
-    span=srcImage->bpp*srcImage->bpp;
-    for (row=0;row<srcImage->height;row++){
-        for (pix=0;pix<srcImage->width;pix++){
-            for (bit=0;bit<srcImage->bpp;bit++){
-                destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,algorithm);
-            }
-        }
+//  int row,pix,bit,span;
+
+//  Change the span variable so that we can flatten the loops,
+//  and pull out constants 
+    int height = srcImage->height, width = srcImage->width, bpp = srcImage->bpp;
+    long long int span = height * width * bpp;
+#   pragma omp parallel for num_threads(4)
+    for (int i=0; i<span; i++){
+	// Compute the row, pixel, and bit based on the current value of i
+	int row = (i/ bpp) /width;
+	int pix = (i/bpp) % width;
+	int bit = i%bpp;
+	// Get the pixel value, then split 
+	uint8_t pixval = getPixelValue(srcImage,pix,row,bit,algorithm);
+        destImage->data[Index(pix,row,width,bit,bpp)] = pixval;
     }
 }
 
@@ -112,7 +121,7 @@ int main(int argc,char** argv){
     destImage.width=srcImage.width;
     destImage.data=malloc(sizeof(uint8_t)*destImage.width*destImage.bpp*destImage.height);
     convolute(&srcImage,&destImage,algorithms[type]);
-    stbi_write_png("output.png",destImage.width,destImage.height,destImage.bpp,destImage.data,destImage.bpp*destImage.width);
+    stbi_write_png("output-omp.png",destImage.width,destImage.height,destImage.bpp,destImage.data,destImage.bpp*destImage.width);
     stbi_image_free(srcImage.data);
     
     free(destImage.data);
