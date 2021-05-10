@@ -1,2 +1,4 @@
-# CISC372_hw4
-Do not commit to this repository.  Please fork a copy into your own repository, then work from your personal forked copy.
+# CISC372_hw5
+For this assignment, I focused only on parallelizing the convolute function, as it is the only function in image.c with the biggest time complexity. For OpenMP, I tried to directly parallelize the for loops, but that had race conditions. The simplest answer was to actually take the nested for-for-for loop and make one giant for loop. This meant that OpenMP had only one loop to deal with, and so the race conditions were gone.
+
+For Pthreads, I had to add a parallel version of the convolute function that took a struct with the original arguments. It was definitely more work and is super messy, but I got it to work in the end. Like OpenMP, I combined the for loops, but I did not touch the bit loop as it gave seg faults. I also used semaphores to grant ranks as a quick and dirty solution to balancing the threads.
